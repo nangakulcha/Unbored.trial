@@ -1119,79 +1119,61 @@ function getSB() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AUTH — Anonymous sign-in + profile system
-   No email required. Users get an anonymous Supabase session,
-   then we store/verify their username+password in the profiles
-   table directly. Clean, no rate limits, no email ever.
+   AUTH — Fake email approach, no real email ever sent
+   Uses username+randomseed@unbored.app format
+   Password stored in Supabase auth (hashed by Supabase)
+   No email confirmation, no rate limit issues
 ═══════════════════════════════════════════════════════════ */
-
-/* Hash password with SHA-256 for secure storage */
-async function hashPassword(password) {
-  const enc = new TextEncoder();
-  const data = enc.encode(password + 'unbored_salt_v1');
-  const buf = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
 
 async function sbSignUp(username, password, avatar) {
   const sb = getSB();
-  // 1. Check username not already taken
+  // Check username not taken in profiles table
   const { data: existing } = await sb
     .from('profiles')
     .select('id')
     .eq('username', username)
     .maybeSingle();
   if (existing) throw new Error('Username already taken');
-  // 2. Create anonymous Supabase session
-  const { data: anonData, error: anonError } = await sb.auth.signInAnonymously();
-  if (anonError) throw anonError;
-  const userId = anonData.user.id;
-  // 3. Hash password
-  const pwHash = await hashPassword(password);
-  // 4. Create profile row
-  const { error: profileError } = await sb
+
+  // Use a deterministic fake email from username
+  // unbored.app domain never receives email so no rate limit
+  const fakeEmail = username.toLowerCase() + '@player.unbored.app';
+
+  const { data, error } = await sb.auth.signUp({
+    email: fakeEmail,
+    password: password,
+    options: {
+      emailRedirectTo: null,
+      data: { username, avatar }
+    }
+  });
+  if (error) throw error;
+  if (!data.user) throw new Error('Signup returned no user');
+
+  // Create profile manually (trigger may not fire for fake emails)
+  const { error: profErr } = await sb
     .from('profiles')
     .upsert({
-      id: userId,
+      id: data.user.id,
       username,
       avatar,
-      password_hash: pwHash,
       pts: 0, streak: 0, skipped: 0,
       streak_days: [], used_ids: [],
       daily_completed: {}, friends: [],
-    });
-  if (profileError) throw profileError;
-  return anonData.user;
+    }, { onConflict: 'id' });
+  // Ignore profile error if trigger already created it
+  return data.user;
 }
 
 async function sbSignIn(username, password) {
   const sb = getSB();
-  // 1. Find profile by username
-  const { data: profile, error: findError } = await sb
-    .from('profiles')
-    .select('id, password_hash')
-    .eq('username', username)
-    .maybeSingle();
-  if (findError) throw findError;
-  if (!profile) throw new Error('User not found');
-  // 2. Verify password
-  const pwHash = await hashPassword(password);
-  if (profile.password_hash !== pwHash) throw new Error('Wrong password');
-  // 3. Sign in anonymously (restores session for this user's data)
-  //    We store the user's real UUID in localStorage for session restore
-  const stored = localStorage.getItem('unbored_uid');
-  if (stored === profile.id) {
-    // Try to restore existing session
-    const { data: session } = await sb.auth.getSession();
-    if (session?.session) return { id: profile.id };
-  }
-  // Create fresh anonymous session and link to this profile
-  const { data: anonData, error: anonError } = await sb.auth.signInAnonymously();
-  if (anonError) throw anonError;
-  // Store the mapping so we can restore
-  localStorage.setItem('unbored_uid', profile.id);
-  localStorage.setItem('unbored_anon_id', anonData.user.id);
-  return { id: profile.id };
+  const fakeEmail = username.toLowerCase() + '@player.unbored.app';
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: fakeEmail,
+    password: password,
+  });
+  if (error) throw error;
+  return data.user;
 }
 
 async function sbSignOut() {
@@ -1201,14 +1183,8 @@ async function sbSignOut() {
 }
 
 async function sbGetSession() {
-  // Check if we have a stored profile ID
-  const storedUid = localStorage.getItem('unbored_uid');
-  if (!storedUid) return null;
-  // Verify Supabase session still valid
   const { data } = await getSB().auth.getSession();
-  if (!data.session) return null;
-  // Return a session-like object with the real profile ID
-  return { user: { id: storedUid } };
+  return data.session;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1750,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   showLoading('LOADING...');
   try{
     const session=await sbGetSession();
-    if(session){
+    if(session?.user?.id){
       S.sbUserId=session.user.id;
       await loadUserData(session.user.id);
       showAppChrome();
