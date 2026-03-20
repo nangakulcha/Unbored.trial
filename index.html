@@ -216,16 +216,17 @@ body::after {
 #view-login { background: var(--bg); }
 .login-scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 24px 20px 40px; display: flex;
-  flex-direction: column; gap: 16px;
+  padding: 20px 20px 60px; display: flex;
+  flex-direction: column; gap: 14px;
 }
+.login-scroll::-webkit-scrollbar { display: none; }
 .login-header {
   font-size: 9px; color: var(--px2);
-  text-align: center; margin-bottom: 4px;
+  text-align: center; margin-bottom: 2px;
 }
 .login-tabs { display: flex; border: 2px solid var(--px1); }
 .ltab {
-  flex: 1; font-size: 7px; padding: 10px; text-align: center;
+  flex: 1; font-size: 7px; padding: 12px; text-align: center;
   color: var(--px1); background: transparent;
   transition: all 0.15s; letter-spacing: 1px;
 }
@@ -235,31 +236,35 @@ body::after {
 .field-input {
   width: 100%; background: var(--px0);
   border: 2px solid var(--px1); color: var(--px2);
-  font-family: var(--vt); font-size: 20px;
-  padding: 10px 12px; outline: none;
+  font-family: var(--vt); font-size: 22px;
+  padding: 12px 14px; outline: none;
   border-radius: 0; -webkit-appearance: none;
+  /* Ensure full width and no shrinking */
+  box-sizing: border-box; min-height: 48px;
 }
 .field-input:focus { border-color: var(--px2); }
 .field-input::placeholder { color: var(--px1); opacity: 0.5; }
-.avatar-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.avatar-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .av-opt {
-  font-size: 26px; padding: 6px; border: 2px solid transparent;
+  font-size: 28px; padding: 8px; border: 2px solid transparent;
   border-radius: 4px; transition: all 0.15s; cursor: pointer;
 }
 .av-opt.selected { border-color: var(--px2); background: rgba(139,172,15,0.1); }
 .login-err {
-  font-size: 6px; color: var(--red);
-  text-align: center; min-height: 14px; letter-spacing: 0.5px;
+  font-family: var(--vt); font-size: 18px; color: var(--red);
+  text-align: center; min-height: 20px; line-height: 1.3;
+  word-break: break-word;
 }
 .big-btn {
   width: 100%; font-size: 8px; letter-spacing: 1px;
-  padding: 14px; background: var(--px1); color: var(--px3);
-  border: none; transition: all 0.15s;
+  padding: 16px; background: var(--px1); color: var(--px3);
+  border: none; transition: all 0.15s; min-height: 52px;
 }
 .big-btn:active { background: var(--px2); color: var(--px0); }
+.big-btn:disabled { opacity: 0.5; }
 .login-version {
-  font-size: 5px; color: var(--px0); text-align: center;
-  margin-top: 8px;
+  font-family: var(--vt); font-size: 15px; color: var(--px0);
+  text-align: center; margin-top: 4px;
 }
 
 /* ═══════════════════════════════════════════
@@ -866,11 +871,13 @@ body::after {
         <div id="reg-form-area" style="display:none;">
           <div class="field-wrap">
             <div class="field-label">HERO NAME</div>
-            <input class="field-input" id="reg-user" placeholder="CHOOSE NAME..." maxlength="16" autocorrect="off" autocapitalize="characters" spellcheck="false"/>
+            <input class="field-input" id="reg-user" placeholder="YOUR NAME..." maxlength="16" autocorrect="off" autocapitalize="characters" spellcheck="false"/>
+            <div style="font-family:var(--vt);font-size:15px;color:var(--px1);">Letters, numbers, _ only. Max 16 chars.</div>
           </div>
           <div class="field-wrap">
             <div class="field-label">PASSWORD</div>
             <input class="field-input" type="password" id="reg-pass" placeholder="MIN 6 CHARS..." autocomplete="new-password"/>
+            <div style="font-family:var(--vt);font-size:15px;color:var(--px1);">Minimum 6 characters.</div>
           </div>
           <div class="field-wrap">
             <div class="field-label">CHOOSE AVATAR</div>
