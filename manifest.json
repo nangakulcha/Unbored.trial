@@ -1,0 +1,10 @@
+{
+  "name": "UNBORED",
+  "short_name": "UNBORED",
+  "description": "Turn boring days into legendary ones.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080f08",
+  "theme_color": "#0f380f",
+  "orientation": "portrait"
+}
